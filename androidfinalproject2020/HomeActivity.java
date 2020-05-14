@@ -1,12 +1,18 @@
 package com.example.androidfinalproject2020;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+import androidx.core.app.ShareCompat;
 import androidx.core.content.ContextCompat;
 
+import android.Manifest;
+import android.app.AlertDialog;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.graphics.drawable.ColorDrawable;
 import android.os.Bundle;
+import android.telephony.SmsManager;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
@@ -19,7 +25,7 @@ import java.util.Calendar;
 
 public class HomeActivity extends AppCompatActivity {
 
-    private Button logoutBtn, addBtn, deleteBtn;
+    private Button logoutBtn, addBtn, deleteBtn, alarmBtn,messageBtn, callBtn;
     private TextView textConsumedCals, textTotalCals;
     private String stringConsumedCals;
     private String stringTotalCals;
@@ -27,11 +33,11 @@ public class HomeActivity extends AppCompatActivity {
     // Calender by Rene
     private TextView tt;
     public static final int TEXT_REQUEST = 1;
-    public static final int INPUT_REQUEST = 0;
+    private static final int PERMISSION_REQUEST_CODE = 0;
 
     // Shared preference
     private float mCount = 0f;
-    private float mTotalCalories = 3500f;
+    private float mTotalCalories = 2500f;
     private int mColor;
     // Key
     private final String COUNT_KEY = "count";
@@ -51,11 +57,64 @@ public class HomeActivity extends AppCompatActivity {
         getSupportActionBar().setHomeAsUpIndicator(R.drawable.ic_keyboard_backspace_black_24dp);
         setTitle("Go Back");
 
+        sendMessage();
+        makeCall();
+        alarm();
         logout();
         add();
         delete();
         setCircularProgressBar();
         pickCalender();
+    }
+
+    private void makeCall() {
+        callBtn = (Button)findViewById(R.id.call_button);
+        callBtn.setOnClickListener(new View.OnClickListener(){
+
+            @Override
+            public void onClick(View v) {
+                makePhoneCall();
+            }
+        });
+    }
+
+    private void makePhoneCall() {
+        Intent intentCall = new Intent(Intent.ACTION_DIAL);
+
+        if (intentCall.resolveActivity(getPackageManager()) != null) {
+            startActivity(intentCall);
+        }
+    }
+
+    private void sendMessage() {
+        messageBtn = (Button)findViewById(R.id.message_button);
+
+        messageBtn.setOnClickListener(new View.OnClickListener(){
+
+            @Override
+            public void onClick(View v) {
+                Intent intentMsm = new Intent(Intent.ACTION_SEND);
+                intentMsm.putExtra(Intent.EXTRA_TEXT,0);
+                intentMsm.setType("text/plain");
+                Intent chooser = Intent.createChooser(intentMsm,"Share with");
+                if(intentMsm.resolveActivity(getPackageManager()) != null ){
+                startActivity(chooser);
+                }
+            }
+        });
+    }
+    private void alarm() {
+        // click button add
+        alarmBtn = (Button)findViewById(R.id.alarm_btn);
+        alarmBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent_alarm = new Intent(HomeActivity.this,
+                                               NotificationActivity.class);
+                startActivity(intent_alarm);
+
+            }
+        });
     }
 
     private void logout() {
@@ -64,8 +123,8 @@ public class HomeActivity extends AppCompatActivity {
         logoutBtn.setOnClickListener(new View.OnClickListener(){
             @Override
             public void onClick(View v) {
-                Intent intent = new Intent(HomeActivity.this, MainActivity.class);
-                startActivity(intent);
+                Intent intentLogout = new Intent(HomeActivity.this, MainActivity.class);
+                startActivity(intentLogout);
 
             }
         });
@@ -108,36 +167,29 @@ public class HomeActivity extends AppCompatActivity {
 
 
     private void setCircularProgressBar() {
-        // set CircularProgressBar Width, RoundBorder, Max
+        // set CircularProgressBar
         circularProgressBar = findViewById(R.id.circularProgressBar);
+        // Set Width, RoundBorder, Max
         circularProgressBar.setProgressBarWidth(30); // in DP
         circularProgressBar.setBackgroundProgressBarWidth(30); // in DP
         circularProgressBar.setRoundBorder(true);
-
-        // init total calories on textView
-        textTotalCals = (TextView) findViewById(R.id.text_total_calories);
+        circularProgressBar.setProgressMax(2500f);
 
         // Initialize views, color, preferences
         textConsumedCals = (TextView) findViewById(R.id.text_consumed_calories);
         mColor = ContextCompat.getColor(HomeActivity.this, R.color.colorAccent);
         mPreferences = getSharedPreferences(sharedPrefFile, MODE_PRIVATE);
 
-        // restore color
-        mColor = mPreferences.getInt(COLOR_KEY, mColor);
-        circularProgressBar.setProgressBarColor(mColor);
-
         // Restore preferences
         mCount = mPreferences.getFloat(COUNT_KEY, 0);
         textConsumedCals.setText(String.format("%s", mCount));
         circularProgressBar.setProgress(mCount);
+
+        mColor = mPreferences.getInt(COLOR_KEY, mColor);
+        circularProgressBar.setProgressBarColor(mColor);
+
         // add up calories from intent
         getIntentCalories();
-
-        mTotalCalories = mPreferences.getFloat(TOTAL_KEY,3500f);
-        textTotalCals.setText(String.format("%s",mTotalCalories));
-        circularProgressBar.setProgressMax(mTotalCalories);
-        // add up calories from intent
-        getIntentTotalCalories();
 
     }
 
@@ -148,7 +200,7 @@ public class HomeActivity extends AppCompatActivity {
             mCount = mCount + Float.valueOf(stringConsumedCals);
             textConsumedCals.setText(String.valueOf(mCount));
             circularProgressBar.setProgress(mCount);
-            if (mCount >= 3000f) {
+            if (mCount >= 2500f) {
                 Toast.makeText(HomeActivity.this,
                                "Too many calories today.", Toast.LENGTH_SHORT).show();
 
@@ -156,17 +208,7 @@ public class HomeActivity extends AppCompatActivity {
         }
     }
 
-    private void getIntentTotalCalories(){
-
-        stringTotalCals = getIntent().getStringExtra(InputActivity.INPUT_CALORIES);
-        if (stringTotalCals != null) {
-            mTotalCalories = Float.valueOf(stringTotalCals);
-            textTotalCals.setText(String.valueOf(mTotalCalories));
-            circularProgressBar.setProgressMax(mTotalCalories);
-        }
-    }
-
-    private void changeBackground (View view){
+    public void changeBackground (View view){
         int color = ((ColorDrawable) view.getBackground()).getColor();
         circularProgressBar.setProgressBarColor(color);
         mColor = color;
@@ -174,13 +216,7 @@ public class HomeActivity extends AppCompatActivity {
     }
 
     public void reset (View view){
-        Intent resetIntent = new Intent(HomeActivity.this, InputActivity.class);
-        startActivity(resetIntent);
-    }
-
-    public void clear (View view){
-
-        // Reset consumed calories
+        // Reset count
         mCount = 0f;
         textConsumedCals.setText(String.format("%s", mCount));
         circularProgressBar.setProgress(mCount);
@@ -193,6 +229,13 @@ public class HomeActivity extends AppCompatActivity {
         SharedPreferences.Editor preferencesEditor = mPreferences.edit();
         preferencesEditor.clear();
         preferencesEditor.apply();
+    }
+
+    public void clear (View view){
+        // Reset count
+        mCount = 0f;
+        textConsumedCals.setText(String.format("%s", mCount));
+        circularProgressBar.setProgress(mCount);
 
     }
 
@@ -229,12 +272,43 @@ public class HomeActivity extends AppCompatActivity {
     @Override
     protected void onPause () {
         super.onPause();
+
         SharedPreferences.Editor preferencesEditor = mPreferences.edit();
-        preferencesEditor.putFloat(TOTAL_KEY, mTotalCalories);
         preferencesEditor.putFloat(COUNT_KEY, mCount);
         preferencesEditor.putInt(COLOR_KEY, mColor);
         preferencesEditor.apply();
     }
+
+    @Override
+    protected void onStart(){
+        super.onStart();
+
+    }
+
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+
+    }
+
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+
+    }
+
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+
+    }
+
+
+
+
 
     // Calender by Rene
     private void pickCalender() {
