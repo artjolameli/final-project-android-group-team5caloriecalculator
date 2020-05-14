@@ -104,3 +104,15 @@ public class InputActivity extends AppCompatActivity {
     }
 
 }
+
+
+// Chen: Professor
+// this page was depricated, due to have bugs on the max value on homepage.
+
+
+
+
+
+
+
+
